@@ -1,0 +1,120 @@
+writeInfoLine: "Boe"
+# Select sound and textgrid
+# View & Edit
+# Select interval of textgrid
+# Run script
+
+
+# form ChangePitch
+#    comment Select sound and texgrid, View & Edit, and select an interval for changing the pitch
+#    comment 
+#    natural NewPitch 200
+#    real ExtraBlank 0
+# endform
+
+# manipTimeStep= 0.001
+
+# snd1= selected("Sound")
+# tg= selected("TextGrid")
+# name$= selected$("Sound")
+
+
+# if extraBlank > 0
+#   blank= Create Sound from formula: "blank", 1, 0, extraBlank, 44100, "0"
+# endif
+
+# select snd1
+# snd= Resample: 44100, 50
+# Rename: name$
+
+# editor: "TextGrid test"
+#     Move start of selection to nearest zero crossing
+#     Move end of selection to nearest zero crossing
+#     timeStart= Get start of selection
+#     timeEnd= Get end of selection
+# endeditor
+
+
+# @ManipulatePitch(snd, timeStart, timeEnd, newPitch)
+
+# select snd
+# Formula (part): timeStart, timeEnd, 1, 1, "Sound_resynth(x-timeStart)"
+
+# select Sound resynth
+# if extraBlank > 0
+#   plus blank
+# endif
+# Remove
+
+# select tg
+# tg= Copy: name$
+
+# select snd
+# plus tg
+# View & Edit
+
+# exit
+
+
+# procedure Concat .blank .name$
+#    .snd= selected("Sound")
+#    select .blank
+#    .blank1= Copy: "blank1"
+#    select .snd
+#    .sndTemp= Copy: "sndTemp"
+#    select .blank
+#    .blank2= Copy: "blank2"
+#    plus .blank1
+#    plus .sndTemp
+#    .c= Concatenate
+#    Rename: .name$
+
+#    select .blank1
+#    plus .blank2
+#    plus .sndTemp
+#    Remove
+
+#    select .c
+
+# endproc
+
+# procedure ManipulatePitch .snd .timeStart .timeEnd .newPitch
+   
+#    select .snd
+#    name$= selected$("Sound")
+#    .ex= Extract part: .timeStart, .timeEnd, "rectangular", 1, "no"
+#    if extraBlank > 0
+#       @Concat(blank, name$)
+#       .con= selected("Sound")
+#    endif
+#    .manip= To Manipulation: manipTimeStep, 75, 600
+#    .pt= Extract pitch tier
+#    .nop= Get number of points
+#    for .i to .nop
+#        .value= Get value at index: .i
+#        .time= Get time from index: .i
+#        Remove point: .i
+#        Add point: .time, .newPitch
+#    endfor
+#    plus .manip
+#    Replace pitch tier
+#    select .manip
+#    .res= Get resynthesis (overlap-add)
+   
+#    if extraBlank > 0
+#       duration= Get total duration
+#       .exp= Extract part: extraBlank, duration-extraBlank, "rectangular", 1, "no"
+#       Rename: "resynth"
+#       select .res
+#       plus .con
+#       Remove
+#    else
+#       Rename: "resynth"
+#    endif
+#    select .ex
+#    plus .pt
+#    plus .manip
+#    Remove
+
+# endproc
+         
