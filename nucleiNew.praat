@@ -1,8 +1,11 @@
+# printline soundname, nsyll, npause, dur (s), phonationtime (s), speechrate (nsyll/dur), articulation rate (nsyll / phonationtime), ASD (speakingtime/nsyll)
+
 # Silence threshold in dB. 
 # This "determines the maximum silence intensity value in dB with
 # respect to the maximum intensity. So everything with intensity
 # below max_intensity - silenceThreshold is considered to be silent.
 silenceThreshold= -25
+
 minDip 			= 2
 showText 		= 1
 minPause 		= 0.3
@@ -140,3 +143,34 @@ plus pitch
 plus intensity
 plus intensitySound
 Remove
+
+## Total sounding duration
+# Calculate the duration of the speech `soundingDur`.
+# That is: add the duration of all non-silent, but sounding parts.
+select textgrid
+silenceTier 	= Extract tier: 2
+silenceTable 	= Down to TableOfReal: "sounding"
+numPauses 		= Get number of rows
+soundingDur 	= 0
+for i to numPauses
+	beginSound 	= Get value: i, 1
+	endSound 	= Get value: i, 2
+	soundingDur += endSound - beginSound
+endfor
+
+# Clean up
+select silenceTier
+plus silenceTable
+Remove
+
+speakingRate 	= peakCount / soundDur
+articulationRate= peakCount / soundingDur
+npause 			= numPauses - 1
+asd 			= soundingDur / peakCount
+
+select sound
+soundname$ = selected$("Sound")
+printline 'soundname$', 'peakCount', 'npause', 'soundDur:2', 'soundingDur:2', 'speakingRate:2', 'articulationRate:2', 'asd:3'
+
+
+
