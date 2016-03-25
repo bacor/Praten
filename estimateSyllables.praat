@@ -37,7 +37,7 @@ select intensity
 matrix 			= Down to Matrix
 intensitySound 	= To Sound (slice): 1
 intensSoundDur 	= Get total duration
-maximaObject 	= To PointProcess (extrema): "Left", "yes", "no", "Sinc70"
+maximaPP 		= To PointProcess (extrema): "Left", "yes", "no", "Sinc70"
 numMaxima 		= Get number of points
 for i to numMaxima
    maxima[i] 	= Get time from index: i
@@ -121,10 +121,10 @@ endfor
 # intensity object
 timeCorrection = soundDur / intensSoundDur
 
-# Insert voiced peaks in TextGrid
+# Insert nuclei positions in TextGrid
 if showText > 0
 	select textgrid
-	Insert point tier: 1, "syllables"
+	Insert point tier: 1, "nuclei"
 
 	for i to peakCount
 		peak = peaks[i] * timeCorrection
@@ -132,11 +132,127 @@ if showText > 0
 	endfor
 endif
 
+select intensitySound
+minimaPP 	= To PointProcess (extrema): "Left", "no", "yes", "Sinc70"
+
+select textgrid
+nuclei = Extract one tier: 1
+
+select textgrid
+Insert interval tier: 1, "syllables"
+
+select pitch
+pitchPP 		= To PointProcess
+voicedUnvoiced 	= To TextGrid (vuv): 0.02, 0.01
+numIntervals 	= Get number of intervals: 1
+
+for i to numIntervals
+
+	select voicedUnvoiced
+	label$ 		= Get label of interval: 1, i
+	
+	# We only consider intervals that are voiced (V)
+	if label$ = "V"
+		
+		# Find current interval boundaries
+		intervalStart 	= Get starting point: 1, i
+		intervalEnd 	= Get end point: 1, i
+		
+		# Adjust them to nearest zero crossing 
+		select sound
+		intervalStart 	= Get nearest zero crossing: 1, intervalStart
+		intervalEnd 	= Get nearest zero crossing: 1, intervalEnd
+
+		# Insert the interval boundaries in the textgrid
+		select textgrid
+		Insert boundary: 1, intervalStart
+		Insert boundary: 1, intervalEnd
+
+		# Extract the nuclei in this interval
+		select nuclei
+		intervalNuclei 	= Extract part: intervalStart, intervalEnd, "yes"
+		numNuclei 		= Get number of points: 1
+		
+		# If there's only one, we're done...
+		if numNuclei = 1
+			select textgrid
+			intervalId = Get high interval at time: 1, intervalStart
+			Set interval text: 1, intervalId, "syllable"
+
+		# ... Otherwise, we have to break up the current interval 
+		# between every two successive nuclei. We do that by searching
+		# for the point of minimum intensity between all successive nuclei.
+		elsif numNuclei > 1
+			for j to numNuclei - 1
+
+				select intervalNuclei
+				curNucleus 		= Get time of point: 1, j
+				nextNucleus 	= Get time of point: 1, j + 1
+
+ 				select minimaPP
+				firstMinimum 	= Get high index: curNucleus
+				lastMinimum 	= Get low index: nextNucleus
+				
+				# `minMinimum` is the index of the minimum with the 
+				# lowest intensity of all minima between curNucleus and 
+				# nextNucleus. If there's only one minimum, just take 
+				# the first and only as the `minMinimum`.... 
+				minMinimum 		= firstMinimum
+				
+				# ... otherwise, we look for the minimal one.
+				if firstMinimum <> lastMinimum
+					index = firstMinimum
+					repeat
+						select minimaPP
+						time = Get time from index: index
+						select intensitySound
+						mins[index] = Get value at time: time, "Cubic"
+
+						if mins[index] < mins[minMinimum]
+							minMinimum = index
+						endif
+
+						index += 1
+					until index > lastMinimum
+				endif
+
+				# Insert another boundary in the interval at the
+				# lowest minimum we just determined.
+				select minimaPP
+				boundary = Get time from index: minMinimum
+				
+				select textgrid
+				Insert boundary: 1, boundary
+				intervalId = Get low interval at time: 1, boundary
+				Set interval text: 1, intervalId, "syllable"
+
+			endfor
+
+			# Fix text in the last interval
+			intervalId = Get low interval at time: 1, intervalEnd
+			Set interval text: 1, intervalId, "syllable"
+		endif
+
+		# Reset
+		select intervalNuclei
+		Remove
+
+	endif
+endfor
+
+# Number all the syllables
+select textgrid
+numIntervals = Get number of intervals: 1
+for i to numIntervals
+	label$ = Get label of interval: 1, i
+	if label$ = "syllable"
+		Set interval text: 1, i, string$ (i)
+	endif
+endfor
+
+# Remove the tier with silence/sounding
+Remove tier: 3
 
 # Clean up
-select maximaObject
-plus matrix
-plus pitch
-plus intensity
-plus intensitySound
+selectObject: maximaPP, minimaPP, matrix, pitch, intensity, intensitySound, pitchPP, voicedUnvoiced, nuclei
 Remove
