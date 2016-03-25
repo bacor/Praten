@@ -75,7 +75,7 @@ form Counting Syllables in Sound Utterances
 	real Minimum_dip_between_peaks_(dB) 2
 	real Minimum_pause_duration_(s) 0.3
 	boolean Keep_Soundfiles_and_Textgrids yes
-	sentence directory /Users/Bas/Github Projects/Praten/sounds
+	sentence directory /directory
 endform
 
 # Use more convenient variable names
