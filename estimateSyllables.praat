@@ -4,25 +4,32 @@ include procedures/GetNuclei.praat
 include procedures/ManipulatePitch.praat
 
 # The sound file
-sound = Read from file: "sounds/demo.wav"
+sound = Read from file: "sounds/AT0032-context.wav"
+pitch = To Pitch (ac): 0.02, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+select sound
+intensity = To Intensity: 50, 0, "yes"	
 
 # Get all nuclei
-@GetNuclei: sound, undefined, undefined, undefined
+@GetNuclei: sound, pitch, intensity, undefined, 2, undefined
 textgrid = selected("TextGrid")
 
 # Estimate the syllables from the nuclei
-@NucleiToSyllables: sound, textgrid, undefined, undefined, undefined
+@NucleiToSyllables: sound, textgrid, pitch, intensity
 
 selectObject: sound, textgrid
 View & Edit
 
-#######################################################
 
+## MANIPULATE
+# 
+# This clearly doesn't work yet. But that was to be expected.
+# --> A weighted sum would be much better. 
 
+# select sound
+# original = Copy: "Original"
 
-# newPitch = 200
-# manipTimeStep= 0.001
-# extraBlank = 0
+# select textgrid
+# numIntervals = Get number of intervals: 1
 
 # for i to numIntervals
 # 	select textgrid
@@ -35,52 +42,11 @@ View & Edit
 # 		select pitch
 # 		mean = Get mean: start, end, "Hertz"
 
-# 		select sound
-# 		manipulation = Copy: "manipulation"
-# 		@ManipulatePitch: manipulation, start, end, mean, manipTimeStep
+# 		@ManipulatePitch: sound, start, end, mean, 0.001
 
 # 	endif
 # endfor
 
-# @ManipulatePitch(snd, timeStart, timeEnd, newPitch)
 
-# select snd
-# Formula (part): timeStart, timeEnd, 1, 1, "Sound_resynth(x-timeStart)"
-
-# select Sound resynth
-# if extraBlank > 0
-#   plus blank
-# endif
-# Remove
-
-# select tg
-# tg= Copy: name$
-
-# select snd
-# plus tg
-# View & Edit
-
-# exit
-
-
-# procedure Concat .blank .name$
-#    .snd= selected("Sound")
-#    select .blank
-#    .blank1= Copy: "blank1"
-#    select .snd
-#    .sndTemp= Copy: "sndTemp"
-#    select .blank
-#    .blank2= Copy: "blank2"
-#    plus .blank1
-#    plus .sndTemp
-#    .c= Concatenate
-#    Rename: .name$
-
-#    select .blank1
-#    plus .blank2
-#    plus .sndTemp
-#    Remove
-
-#    select .c
-
-# endproc
+selectObject: pitch, intensity
+Remove

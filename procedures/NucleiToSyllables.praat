@@ -21,37 +21,35 @@
 #					the syllable nuclei
 # @param Pitch 		(Optional)
 # @param Intenstiy 	(Optional)
-# @param Sound 		(Optional) A sound object derived from the intensity
 #
 
-procedure NucleiToSyllables: .sound, .textgrid, .pitch, .intensity, .intensitySound
+procedure NucleiToSyllables: .sound, .textgrid, .pitch0, .intensity0
 
-	## DEFAULT VALUES
-	#
-
-	# Default value .pitch
-	if .pitch = undefined
+	# DEFAULT Pitch
+	if .pitch0 = undefined
 		select sound
 		.pitch 	= To Pitch (ac): 0.02, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+	else
+		select .pitch0
+		.pitch = Copy: "pitch"
 	endif
 
-	# Default value .intensity
-	if .intensity = undefined
+	# DEFAULT intensity
+	if .intensity0 = undefined
 		select sound
 		.intensity = To Intensity: 50, 0, "yes"	
-	endif
-
-	# Defaul value .intensitySound
-	if .intensitySound = undefined
-		select .intensity
-		.matrix = Down to Matrix
-		.intensitySound = To Sound (slice): 1
+	else
+		select .intensity0
+		.intensity = Copy: "intensity"
 	endif
 
 
 	## INITIALIZATION
 	#
 	# Set up textgrid tiers, get minima, voiced/unvoiced grids ets.
+	select .intensity
+	.matrix = Down to Matrix
+	.intensitySound = To Sound (slice): 1
 
 	select .textgrid
 	.nuclei = Extract one tier: 1
@@ -96,17 +94,26 @@ procedure NucleiToSyllables: .sound, .textgrid, .pitch, .intensity, .intensitySo
 
 			# Insert the interval boundaries in the textgrid
 			# Note that we thus also allow syllables without a nucleus!
-			select .textgrid
-			Insert boundary: 1, .intervalStart
-			Insert boundary: 1, .intervalEnd
-			select .textgrid
-			.intervalId = Get high interval at time: 1, .intervalStart
-			Set interval text: 1, .intervalId, "syllable"
+			# select .textgrid
+			# Insert boundary: 1, .intervalStart
+			# Insert boundary: 1, .intervalEnd
+			# select .textgrid
+			# .intervalId = Get high interval at time: 1, .intervalStart
+			# Set interval text: 1, .intervalId, "syllable"
 
 			# Extract the nuclei in this interval
 			select .nuclei
 			.intervalNuclei = Extract part: .intervalStart, .intervalEnd, "yes"
 			.numNuclei 		= Get number of points: 1
+
+			if .numNuclei >= 1
+				select .textgrid
+				Insert boundary: 1, .intervalStart
+				Insert boundary: 1, .intervalEnd
+				select .textgrid
+				.intervalId = Get high interval at time: 1, .intervalStart
+				Set interval text: 1, .intervalId, "syllable"
+			endif
 			
 			# If there are multiple nuclei, we break up the current interval 
 			# between every two successive nuclei. We do that by searching
@@ -169,6 +176,7 @@ procedure NucleiToSyllables: .sound, .textgrid, .pitch, .intensity, .intensitySo
 		endif
 	endfor
 
+
 	## WRAPPING UP
 	# 
 	# Number the syllables and remove useless tiers and objects. Done!
@@ -186,8 +194,7 @@ procedure NucleiToSyllables: .sound, .textgrid, .pitch, .intensity, .intensitySo
 	endfor
 
 	# Clean up
-	Remove tier: 2
-	Remove tier: 3
+	# Remove tier: 2
 	selectObject: .minimaPP, .pitch, .pitchPP, .voicedUnvoiced, .matrix, .intensity, .intensitySound, .nuclei
 	Remove
 

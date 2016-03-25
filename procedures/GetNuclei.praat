@@ -36,25 +36,45 @@
 # @selects TextGrid A textgrid whose first tier contains the syllable nuclei.
 #
 
-procedure GetNuclei: .sound, .silenceThreshold, .minDip, .minPause
+procedure GetNuclei: .sound, .pitch0, .intensity0, .silenceThreshold, .minDip, .minPause
+
+	# DEFAULT Pitch
+	if .pitch0 = undefined
+		select sound
+		.pitch 	= To Pitch (ac): 0.02, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+	else
+		select .pitch0
+		.pitch = Copy: "pitch"
+	endif
+
+	# DEFAULT intensity
+	if .intensity0 = undefined
+		select sound
+		.intensity = To Intensity: 50, 0, "yes"	
+	else
+		select .intensity0
+		.intensity = Copy: "intensity"
+	endif
 	
+	# DEFAULT silenceThreshold
 	if .silenceThreshold = undefined
 		.silenceThreshold = -25
 	endif
 
+	# DEFAULT mindip
 	if .minDip = undefined
 		.minDip = 2
 	endif
 
+	# DEFAULT minPause
 	if .minPause = undefined
 		.minPause = 0.3
 	endif
 
-	select .sound
-	.soundDur 		= Get total duration
-	.pitch 			= To Pitch (ac): 0.02, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
-	select .sound
-	.intensity 		= To Intensity: 50, 0, "yes"
+
+	## INITIALIZE
+	#
+	# Determine thresholds, maxima and create some objects we'll need
 
 	# We want everything that has an intensity of `silenceThreshold`
 	# below the 99% quantile (rather than below the maximum). So we 
@@ -76,15 +96,15 @@ procedure GetNuclei: .sound, .silenceThreshold, .minDip, .minPause
 	select .intensity
 	.matrix 		= Down to Matrix
 	.intensitySound = To Sound (slice): 1
-	.intensSoundDur = Get total duration
 	.maximaPP 		= To PointProcess (extrema): "Left", "yes", "no", "Sinc70"
 	.numMaxima 		= Get number of points
 	for .i to .numMaxima
 	   .maxima[.i] 	= Get time from index: .i
 	endfor
 
-	################
-	# FILTERS!
+
+	## FILTERING
+	#
 	# We now filter all maxima using three filters (see below) and collect
 	# the positions (times) of the maxima that pass all three filters 
 	# in the `peaks` array;
@@ -96,34 +116,34 @@ procedure GetNuclei: .sound, .silenceThreshold, .minDip, .minPause
 		.currentMax = .maxima[.i]
 		.nextMax = .maxima[.i + 1]
 		
-		################
-		# Start Filter 1.
+		### Filter 1
+		#
 		# This filter checks if the intensity of the current maximum
 		# exceeds the new silence threshold.
+
 		select .intensitySound
 		.intensityValue = Get value at time: .currentMax, "Cubic"
 
-		# Filter 1: Is this point not silent?
 		if .intensityValue > .threshold
 
-			################
-			# Start Filter 2
+			### Filter 2
+			# 
 			# This filter checks if the next dip is deep enough. The dip
 			# is the difference between the current intensity and the 
 			# minimum intensity between this maximum and the next.
-			#
+
 			select .intensity
 			.curIntensity = Get value at time: .currentMax, "Cubic"
 			.dip = Get minimum: .currentMax, .nextMax, "None"
 
-			# Filter 2: is the dip deep enough?
+			# appendInfoLine: newline$,abs(.curIntensity - .dip), ", ", .minDip
 			if abs(.curIntensity - .dip) > .minDip
-
-				################
-				# Start Filter 3
+				# appendInfoLine: "ok"
+				### Filter 3
+				# 
 				# This filter checks if the current maximum is in a sounding
 				# interval (i.e. not silent) and whether it has a pitch.
-				#
+				
 				select .textgrid
 				.interval = Get interval at time: 1, .currentMax
 				.label$ = Get label of interval: 1, .interval
@@ -131,14 +151,13 @@ procedure GetNuclei: .sound, .silenceThreshold, .minDip, .minPause
 				select .pitch
 				.pitchValue = Get value at time: .currentMax, "Hertz", "Linear"
 
-				# Filter 3: is the pitch defined and the interval not silent?
 				if .pitchValue <> undefined
 					if .label$ = "sounding"
 
-						################
-						# Passed all filters
-						# This maximum passed all filters and is a valid peak
+						### Done filtering
 						#
+						# Passed all filters, so this maximum is a valid peak
+						
 						.peakCount += 1
 						.peaks[.peakCount] = .currentMax
 
@@ -153,11 +172,17 @@ procedure GetNuclei: .sound, .silenceThreshold, .minDip, .minPause
 		# End filter 1
 
 	endfor
-	# End filter
 
 
-	# calculate time correction due to shift in time for Sound object versus
+	## FINISHING
+	#
+
+	# Calculate time correction due to shift in time for Sound object versus
 	# intensity object
+	select .sound
+	.soundDur 		= Get total duration
+	select .intensity
+	.intensSoundDur = Get total duration
 	.timeCorrection = .soundDur / .intensSoundDur
 
 	# Insert nuclei positions in TextGrid
@@ -167,6 +192,7 @@ procedure GetNuclei: .sound, .silenceThreshold, .minDip, .minPause
 		.peak = .peaks[.i] * .timeCorrection
 		Insert point: 1, .peak, string$ (.i)
 	endfor
+	Remove tier: 2
 
 	# Clean up
 	selectObject: .pitch, .intensity, .maximaPP, .intensitySound, .matrix
