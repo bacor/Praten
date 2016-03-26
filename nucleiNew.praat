@@ -62,6 +62,9 @@
 ###########################################################################
 
 
+## TO DO:
+# The last intervals seem to be missing?!
+
 ## This script counts the syllables of all sound utterances in a directory
 # NB unstressed syllables are sometimes overlooked
 # NB filter sounds that are quite noisy beforehand
