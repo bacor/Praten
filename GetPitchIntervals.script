@@ -1,0 +1,43 @@
+
+result= Create Table with column names: "table", 0, "Index StartIndex EndIndex StartTime EndTime"
+
+selectObject: "Sound test"
+p= To Pitch (ac): 0, 75, 15, "yes", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+nof= Get number of frames
+
+intervals= 0
+i= 1
+start= 0
+value= Get value in frame: i, "Hertz"
+while i <= nof
+     
+
+     select p
+     while value = undefined and i <= nof
+         i+= 1
+         value= Get value in frame: i, "Hertz"
+     endwhile
+     start= i
+     while value <> undefined and i <= nof
+         i+= 1
+         value= Get value in frame: i, "Hertz"
+     endwhile   
+     if i > start
+       end= i-1
+       endTime= Get time from frame number: i-1
+       startTime= Get time from frame number: start
+
+       select result
+       Append row
+       intervals+= 1
+       Set numeric value: intervals, "Index", intervals
+       Set numeric value: intervals, "StartIndex", start
+       Set numeric value: intervals, "EndIndex", end
+       Set numeric value: intervals, "StartTime", startTime
+       Set numeric value: intervals, "EndTime", endTime
+    endif
+
+    start= i
+
+endwhile
+

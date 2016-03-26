@@ -1,0 +1,203 @@
+selName$= "test"
+timeStep= 0.01
+maxLevels= 20
+bandwidth= 10
+
+freq= Read Table from tab-separated file: "freqList.txt"
+Append column: "median"
+Formula: "median", "self$[""frequency""]"
+
+fTable= Read Table from tab-separated file: "fTable.txt"
+fTable_nor= Get number of columns
+for i to fTable_nor
+  Set column label (index): i, "'i'"
+endfor
+
+result= Create Table with column names: "result", 0, "Index Name Freq MusicFreq"
+resultIndex= 0
+
+selectObject: "TextGrid 'selName$'"
+tg= selected("TextGrid")
+
+tg_noi=Get number of intervals: 1
+for interval to tg_noi
+    selectObject: "TextGrid 'selName$'"
+    label$= Get label of interval: 1, interval
+    timeStart= Get starting point: 1, interval
+    timeEnd= Get end point: 1, interval
+
+    selectObject: "Sound 'selName$'"
+    timeStart= Get nearest zero crossing: 1, timeStart
+    timeEnd= Get nearest zero crossing: 1, timeEnd
+    ex'interval'= Extract part: timeStart, timeEnd, "rectangular", 1, "no"
+    Rename: "test_'interval'"
+  
+    @getPitch: label$
+endfor
+
+select fTable
+for j to fTable_nor
+   result[j]= 0
+   Append column: "median_'j'"
+endfor
+
+clearinfo
+ 
+select fTable
+for i to tg_noi
+    select result
+    musicFreq= Get value: i, "MusicFreq"
+    if musicFreq <> 0
+       
+       for j to fTable_nor
+           select fTable
+           Formula: "median_'j'", "abs(self['j'] - 'musicFreq')"
+           min= Get minimum: "median_'j'"
+           index= Search column: "median_'j'", "'min'"
+           minValue= Get value: index, "median_'j'"
+       
+           result[j]+= minValue
+       endfor
+    endif
+endfor
+
+min= 10000
+index= -1
+for i to fTable_nor
+   if result[i] < min
+      min= result[i]
+      index= i
+   endif
+endfor
+
+printline Geselecteerde toonladder: 'index'
+
+for interval to tg_noi
+
+    select result
+    musicFreq= Get value: interval, "MusicFreq"
+    label$= Get value: interval, "Name"
+    select ex'interval'
+    @manipPitch: musicFreq, label$, interval
+    if musicFreq <> 0
+       select manip
+       Remove
+    endif
+endfor
+
+
+for j from 0 to maxLevels
+   selectObject: manipPitch.s1_'j'
+   for interval from 2 to tg_noi
+      plusObject: manipPitch.s'interval'_'j'
+   endfor
+   c= Concatenate
+   num= round(j*100/maxLevels)
+   Rename: "'num'"
+
+   selectObject: manipPitch.s1_'j'
+   for interval from 2 to tg_noi
+      plusObject: manipPitch.s'interval'_'j'
+   endfor
+   Remove
+endfor
+
+num= 0
+for i from 0 to maxLevels
+  
+  num= round(i*100/maxLevels)
+  selectObject: "Sound 'num'"
+  s= selected("Sound")
+  p= To Pitch (ac): 0, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+  sPitch= Smooth: bandwidth
+  select s
+  plus sPitch
+  m= To Manipulation
+  newSnd= Get resynthesis (overlap-add)
+  Rename: "'num'_smoothed_'bandwidth'"
+  
+  select p
+  plus sPitch
+  plus m
+  Remove
+endfor
+
+
+exit
+
+
+procedure getPitch .name$
+
+   .pt= To Pitch (ac): 0, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+   .mean= Get mean: 0, 0, "Hertz"
+   .musicPitch= 0
+
+   if .mean<> undefined   
+      select freq
+      .tmp= Copy: "tmp"
+
+      Formula: "median", "abs(self - '.mean')"
+      .min= Get minimum: "median"
+      .index= Search column: "median", "'.min'"
+      .musicPitch= Get value: .index, "frequency"
+      .musicFileName$= Get value: .index, "File"
+      select .tmp
+      Remove
+   endif
+      
+   select result
+   Append row
+   resultIndex+= 1
+   Set numeric value: resultIndex, "Index", resultIndex
+   Set numeric value: resultIndex, "Freq", .mean
+   Set numeric value: resultIndex, "MusicFreq", .musicPitch
+   Set string value: resultIndex, "Name", .name$
+   
+   select .pt
+   Remove
+endproc
+
+
+procedure manipPitch .musicFreq .label$ .interval
+
+    .s'.interval'_0= Copy: "'.label$'_0"
+    if .musicFreq= 0
+       for .j to maxLevels
+         .num= .j*100/maxLevels
+         .s'.interval'_'.j'= Copy: "'.label$'_""'.num'"
+       endfor
+    else
+      manip= To Manipulation: timeStep, 75, 600
+      .pt= Extract pitch tier
+      .nop= Get number of points
+ 
+      for .j to maxLevels
+         select .pt
+         .tmpPT= Copy...
+          for .i to .nop
+               .value= Get value at index: .i
+               .newValue= .value + (.j*(.musicFreq - .value)/maxLevels)
+               .time= Get time from index: .i
+               Remove point: .i
+               Add point: .time, .newValue
+          endfor   
+          plus manip
+          Replace pitch tier
+          select manip
+          .s'.interval'_'.j'= Get resynthesis (overlap-add)
+          #Get resynthesis (LPC)
+          .num= .j*100/maxLevels
+          Rename: "'.label$'_""'.num'"
+       
+          select .tmpPT
+          Remove
+      endfor
+
+      select .pt
+      Remove
+    endif
+endproc
+
+
+
+
