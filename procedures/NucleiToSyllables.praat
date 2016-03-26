@@ -106,6 +106,11 @@ procedure NucleiToSyllables: .sound, .textgrid, .pitch0, .intensity0
 			.intervalNuclei = Extract part: .intervalStart, .intervalEnd, "yes"
 			.numNuclei 		= Get number of points: 1
 
+			# Don't do anything if the interval is too small
+			if abs(.intervalStart - .intervalEnd) < 0.001 
+				.numNuclei = 0
+			endif
+
 			if .numNuclei >= 1
 				select .textgrid
 				Insert boundary: 1, .intervalStart
