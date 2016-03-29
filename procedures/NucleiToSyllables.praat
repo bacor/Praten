@@ -28,7 +28,20 @@ procedure NucleiToSyllables: .sound, .textgrid, .pitch0, .intensity0
 	# DEFAULT Pitch
 	if .pitch0 = undefined
 		select sound
-		.pitch 	= To Pitch (ac): 0.02, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
+
+		# Our default pitch parameters
+		# Timestep: 		0.02
+		# floor: 			30 Hz		(75 Hz Praat default)
+		# # candidates: 	5			(15 Praat default)
+		# very accurate: 	no
+		# silence thresh:	0.03
+		# Voicing thresh: 	0.25 		(0.45 Praat default)
+		# Ocate cost: 		0.01		
+		# Octave jump cost:	0.35
+		# V/UV cost:		0.25		(0.14 Praat default)
+		# Pitch ceiling:	450 Hz		(600Hz Praat default)
+		.pitch 	= To Pitch (ac): 0.02, 30, 5, "no", 0.03, 0.25, 0.01, 0.35, 0.25, 450
+
 	else
 		select .pitch0
 		.pitch = Copy: "pitch"

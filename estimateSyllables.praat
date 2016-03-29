@@ -4,7 +4,7 @@ include procedures/GetNuclei.praat
 include procedures/ManipulatePitch.praat
 
 # The sound file
-sound = Read from file: "sounds/AT0032-context.wav"
+sound = Read from file: "sounds/AT0001-context.wav"
 pitch = To Pitch (ac): 0.02, 75, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 600
 select sound
 intensity = To Intensity: 50, 0, "yes"	

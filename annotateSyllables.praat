@@ -55,6 +55,7 @@ form Counting Syllables in Sound Utterances
 	sentence Skip_stimuli_in_directory *target*
 	word Directory_seperator /
 	boolean Force_new_target_directy 0
+	boolean Show_nuclei 1
 	boolean Remove_all_objects 1
 endform
 
@@ -66,6 +67,7 @@ lang$				= language$
 limit 				= number_of_stimuli_to_rank
 forceNewDir			= force_new_target_directy
 removeSoundTextGrid = remove_all_objects
+showNuclei 			= show_nuclei
 sep$				= directory_seperator$
 
 
@@ -181,14 +183,20 @@ for i to numberOfStimuli
 				autoSyllables = Extract one tier: 1
 				Set tier name: 1, "auto syllables"
 
+
 				select textgrid 
-				nuclei = Extract one tier: 2
-	 			select textgrid 
-	 			Remove tier: 2
+				if showNuclei
+					fullTextTier = 3
+				else
+					fullTextTier = 2
+					nuclei = Extract one tier: 2
+		 			select textgrid 
+		 			Remove tier: 2
+		 		endif
 
 				# Insert a tier with the fulltext
-				Insert interval tier: 2, "fulltext"
-				Set interval text: 2, 1, fullText$
+				Insert interval tier: fullTextTier, "fulltext"
+				Set interval text: fullTextTier, 1, fullText$
 
 				selectObject: sound, textgrid
 				View & Edit
@@ -200,7 +208,11 @@ for i to numberOfStimuli
 				endPause: "Continue with the next stimulus", 1
 
 				# Insert the original syllable boundaries and save
-				selectObject: textgrid, nuclei, autoSyllables
+				select textgrid
+				if showNuclei <> 1
+					plus nuclei
+				endif
+				plus autoSyllables
 				newTextgrid = Merge
 				Rename: stimulusId$
 				Save as text file: textGridFile$
@@ -209,7 +221,10 @@ for i to numberOfStimuli
 				numberAdjusted += 1
 
 				# Clean up
-				selectObject: autoSyllables, nuclei, pitch, intensity, textgrid
+				selectObject: autoSyllables, pitch, intensity, textgrid
+				if showNuclei <> 1
+					plus nuclei
+				endif
 				if removeSoundTextGrid
 					plus sound
 					plus newTextgrid

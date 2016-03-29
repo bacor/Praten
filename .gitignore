@@ -1,5 +1,9 @@
 /sounds
 test*.praat
 /data
+/old
 
 log.txt
+*.csv
+*.ipynb
+.texpadtmp/
