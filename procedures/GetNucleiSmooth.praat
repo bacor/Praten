@@ -2,9 +2,9 @@ procedure GetNucleiSmooth: .sound, .maxSmoothingDip, .minDipBefore, .minDipAfter
 	
 	# Load objects
 	select .sound
-	.pitch 	= To Pitch (ac): 0.02, 30, 5, "no", 0.03, 0.25, 0.01, 0.35, 0.25, 450
+	.pitch 	= To Pitch (ac): 0.02, 30, 4, "no", 0.03, 0.25, 0.01, 0.35, 0.25, 450
 	select .sound
-	.intensity = To Intensity: 100, 0, "yes"	
+	.intensity = To Intensity: 50, 0, "yes"	
 	
 	# We want everything that has an intensity of `silenceThreshold`
 	# below the 99% quantile (rather than below the maximum). So we 

@@ -1,26 +1,32 @@
-start = 45
-
-include ../procedures/GetNucleiSmooth.praat
+include ../procedures/GetNuclei_Original.praat
 include ../procedures/DumpAnalysis.praat
 
+
+
+# This script evaluates the getNucleiSmooth algorithm
+# for all parameter settings in a settings.csv file.
+
+start = 14
+end = start + 1000
+
+
 dir$ 		= "~/Github Projects/Praten/"
-settings	= Read Table from comma-separated file: dir$ + "optimization/settings.csv"
+settings	= Read Table from comma-separated file: dir$ + "optimization/origSettings.csv"
 numSettings = Get number of rows
 trainIds 	= Read Table from comma-separated file: dir$ + "optimization/trainIds.csv"
 numIds 		= Get number of rows
+fileBase$   = dir$ + "optimization/results-original/results-"
 
 # Loop over all settings
 for setting to numSettings
-	if setting >= start and setting < start + 10
+	if setting >= start and setting < end
 		# Output file
-		log$ 		= dir$ + "optimization/results-" + string$(setting) + ".csv"
+		log$ 		= fileBase$ + string$(setting) + ".csv"
 		header$ 	= "id,doubleNuclei,missingNuclei,emptyNuclei,numSyllables,numPeaks"
 		writeFileLine: log$, header$
 		
 		select settings
-		maxSmoothingDip		= Get value: setting, "maxSmoothingDip"
-		minDipBefore		= Get value: setting, "minDipBefore"
-		minDipAfter			= Get value: setting, "minDipAfter"
+		minDip				= Get value: setting, "minDip"
 		silenceThreshold	= Get value: setting, "silenceThreshold"
 		minPause			= Get value: setting, "minPause"
 		
@@ -28,13 +34,14 @@ for setting to numSettings
 		for row to numIds
 			select trainIds
 			id$ 	= Get value: row, "stimulus_id"
+			#appendInfoLine: "working on "+id$
 
 			if fileReadable(dir$ + "sounds/stimuli/" + id$ + ".wav")
 
 				sound 	= Read from file: dir$ + "sounds/stimuli/" + id$ + ".wav"
 				
 				#appendInfoLine: "Working on ", id$
-				@GetNucleiSmooth: sound, maxSmoothingDip, minDipBefore, minDipAfter, silenceThreshold, minPause, 0
+				@GetNuclei_Original: sound, minDip, silenceThreshold, minPause
 				
 				# Create a textgrid with tier 1: syllables, 2: nuclei
 				textgrid = selected("TextGrid")

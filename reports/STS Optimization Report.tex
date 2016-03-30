@@ -37,6 +37,7 @@ Standard methods for pitch extraction from audio are available (e.g. autocorrela
 
 Although this model works fine on song data (according to the paper), it does not do a very good job on speech data, which is what we are concerned with. Part of the explanation might be that their model tries to detect stable tonal targets, and those are rare in ordinary speech. Our task is not to detect stable tonal targets, but to estimate which pitch you will hear in unstable tonal targets. (Of course, we know that the very stability already predicts the STS, but not the resulting melody.) This problem is a bit more obscure and I am not aware of previous studies tackling this problem. Therefore, we start at the very beginning.
 
+\paragraph{Outline}
 So where are we to hear pitch anyway? The starting point is that roughly every syllable will be heard on a pitch after some repetitions. In fact, we can say a bit more, since syllables have some structure: they consist of various different kinds of sound. Of most important here is what phoneticians call the \emph{nucleus}, which roughly coincides with the vowel in the syllable. This is the part of the syllable that has the clearest pitch. Our tactic is thus to estimate the pitch of the syllable nuclei and then possibly adjust those to the most likely musical structure. That really divides in three steps: first, to extract syllable nuclei, second to estimate their pitch and third, to map them to a likely musical structure.
 
 Although we can solve the first problem by manually annotating the syllables, it would be desirable to be able to detect them automatically. That would enable us, for example, to automatically \emph{identify} in a given speech fragment, the part that will transform to a song. We look at automatic nucleus detection first.
@@ -46,22 +47,36 @@ As far as I know, there is only one study that attempted to find an algorithm fo
 
 It turns out that nuclei are relatively easy to find. They correspond to peaks in the intensity curve of the audio. The algorithm proposed by \citeauthor{DeJong2009a} essentially selected the peaks that were `clear enough' as the nuclei. More formally, list the non-silent peaks with a pitch --- those are the only serious candidates for nuclei --- as $p_1, \dots, p_n$. Let $v_i$ be the valley or minimum after $p_i$. Moreover write $I(t)$ for the intensity at time $t$ such that $I(p_3)$ is the intensity of the third peak (in dB). The nuclei are then the peaks $p_i$ for which the following dip $|p_i - v_i|$ is deep enough, i.e. above some threshold $\delta$.
 
-This works fine, but there are also some issues. First, why only look at the dips following peaks, and not the ones preceding a peak? Second, small fluctuations in intensity can create multiple peaks in a short time interval. They might all have small dips and thus not be selected, even though the highest has a big dip if you ignore the other ones. So that is exactly what I propose: to first drop peaks with too \emph{small} a dip. That leads to the following algorithm. First, sweep through the peaks $p_1, \dots, p_n$ and for every point check the drop $|p_i - v_i|$. If it is below some $\epsilon$, remove the lowest of the peaks $p_i$ and $p_{i+1}$. Then continue with the point that is left (you might have to consider the same point multiple times, but that's the idea). After this, you repeat the original algorithm with a small adaptation: you now check if $|p_i - v_i| > \delta_1$, but also if $|p_i- v_{i-1}| > \delta_{-1}$. In other words: both the following and the preceding dip must be deep enough.
+This works fine, but there are also some issues. First, why only look at the dips following peaks, and not the ones preceding a peak? Second, small fluctuations in intensity can create multiple peaks in a short time interval. They might all have small dips and thus not be selected, even though the highest has a big dip if you ignore the other ones. So that is exactly what I propose: to first drop peaks with too \emph{small} a dip. That leads to the following algorithm. 
 
-\subsection{Optimization and evaluation}
-To compare this with the original method, I first had to find optimal parameter settings for $\epsilon, \delta_1$ and $\delta_2$. After manually annotating 99 English stimuli with approximate nucleus intervals (rather than points) I randomly divided the stimuli in training (70\%) and test (30\%). The parameter estimation was done using a naive grid search, with $\delta_{1,2}=0.5, 1, 1.5, \dots, 5$ and $\epsilon = 0, 0.5, \dots, 10$.
-	
-As an error measure, I compared the identified nuclei with the annotated nucleus intervals. I counted the number of \emph{duplicate nuclei} (multiple nuclei where there should be one), \emph{superfluous nuclei} (nuclei where there should be none) and \emph{missing nuclei}. I averaged those counts over all training stimuli and added the averages to obtain an error measure. It is intended to capture the average number of mistakes: missing or misplaced nuclei.
+\paragraph{Adapted algorithm}
+First, sweep through the peaks $p_1, \dots, p_n$ and for every point check the drop $|p_i - v_i|$. If it is below some $\epsilon$, remove the lowest of the peaks $p_i$ and $p_{i+1}$. Then continue with the point that is left (you might have to consider the same point multiple times, but that's the idea). After this, you repeat the original algorithm with a small adaptation: you now check if $|p_i - v_i| > \delta_1$, but also if $|p_i- v_{i-1}| > \delta_{-1}$. In other words: both the following and the preceding dip must be deep enough.
 
-Interestingly, the error profile is very easy to interpret. [insert some graphs]. Minimum error 2.36.
+\paragraph{Optimization and evaluation}
+To compare this with the original method, I first had to find optimal parameter settings for $\epsilon, \delta_1$ and $\delta_2$. After manually annotating 98 English stimuli with approximate nucleus intervals (rather than points) I randomly divided the stimuli in a training set (69 stimuli, $\sim 70\%$) and test set (29 stimuli, $\sim 30\%$) sets. The parameter estimation was done using a naive grid search\footnote{The gridsearch was done over $\texttt{minDipBefore}$ and $ \texttt{minDipAfter}$ taking the values $0.5, 1, 1.5, \dots, 5$ and $\texttt{minDip} = 0.5, 1, \dots, 10$ and later did a more finegrained search with $\texttt{minDip} = 3.5,4.6,\dots, 4.5$,  $\texttt{minDipBefore} = 0, 0.1, 0.5$ and $\texttt{minDipAfter}=1.5, 1.6, \dots, 2.5$. The original algorithm only has one parameter, \texttt{minDip}, which was tested for all values between 0 and 10 in steps of 0.1.}
+	The error measure used intends to capture the average number of mistakes: missing or misplaced nuclei. More precisely, we counted the number of \emph{duplicate nuclei} (multiple nuclei where there should be one), \emph{superfluous nuclei} (nuclei where there should be none) and \emph{missing nuclei}. Averaging these counts over all training stimuli and summing the result, gives the error score.
 
-This motivated a second, more refined grid search with $\epsilon= 3.5,4.6,\dots, 4.5$,  $\delta_1 = 0, 0.1, 0.5$ and $\delta_2=1.5, 1.6, \dots, 2.5$. The optimal settings were $\epsilon=4$ and $\delta_2 = 1.8$ and $\delta_1$ anything between $0.1, 0.2, \dots 0.4$. In other words, $\delta_1$ is irrelevant (as it is a minimum value, you can set it to 0). Interestingly, the minimum dip \emph{before} the the peak ($\delta_2$) is not irrelevant. This was not used in the original algorithm. However, the importance of the dip after the peak is captured by the larger value of $\epsilon$.
+\begin{figure}	
+	\hspace{-.15\textwidth}
+	\includegraphics[width=1.3\textwidth]{media/optimization-error.jpg}
+	\caption{The error for different parameter values in the grid search. The largest trend, shown in (a), is caused by the value of \texttt{minDip}. This is also a parameter of the original model and the corresponding errors are shown by the blue line.
+	 The lowest errors in (b) correspond to small values of \texttt{maxDipAfter} (0.5). Plot (c) shows the periodicity of \texttt{maxDipBefore}, which seems to have an amplifying effect on \texttt{maxDipAfter}'s error.\label{fig:error}}
+\end{figure}
+
+\paragraph{Results}
+The error, for different parameter settings, is visualised in figure \ref{fig:error}. Note that it is straightforward to disentangle the effects of different parameters. The optimal parameters for the modified model were $\texttt{minDip}=4$ and $\texttt{minDipBefore} = 1.8$ and $\texttt{minDipAfter}$ anything between $0.1, 0.2, \dots 0.4$. As $\texttt{minDipAfter}$ defines a minimum, but should also  be small, its might not be too important. Evaluating the two algorithms with their optimal settings on the test set gave an average error score of 2.7 for the new algorithm, against 3.3 for the old algorithm, which is a significant difference ($p=0.02$) on a two-sided dependent t-test. In other words, the proposed adaptation seems to improve the old algorithm by roughly 20\%.
+
+
+\section{Detection of the nucleus pitch}
+Given that we now have a (probably still much to be improved) algorithm to estimate nucleus positions, we can move on to the next problem: to estimate the pitch of these nuclei. 
 
 \newpage
 
-
-
-
+\subsection{Notes}
+\begin{enumerate}
+\item UvA0056 has a good example of multiple small variations that are detected by the old algo.
+\item There is a problem with the initial syllables, they are not properly detected! (E.g. UvA0055)
+\end{enumerate}
 
 \begin{multicols}{2}
 \printbibliography

@@ -1,19 +1,23 @@
+# This script evaluates the getNucleiSmooth algorithm
+# for all parameter settings in a settings.csv file.
+
 start = 1
-end = start + 1000
+end = start + 1600
 include ../procedures/GetNucleiSmooth.praat
 include ../procedures/DumpAnalysis.praat
 
 dir$ 		= "~/Github Projects/Praten/"
-settings	= Read Table from comma-separated file: dir$ + "optimization/refinedSettings.csv"
+settings	= Read Table from comma-separated file: dir$ + "optimization/settings.csv"
 numSettings = Get number of rows
 trainIds 	= Read Table from comma-separated file: dir$ + "optimization/trainIds.csv"
 numIds 		= Get number of rows
+fileBase$   = dir$ + "optimization/results-I50/results-"
 
 # Loop over all settings
 for setting to numSettings
 	if setting >= start and setting < end
 		# Output file
-		log$ 		= dir$ + "optimization/refined-results-" + string$(setting) + ".csv"
+		log$ 		= fileBase$ + string$(setting) + ".csv"
 		header$ 	= "id,doubleNuclei,missingNuclei,emptyNuclei,numSyllables,numPeaks"
 		writeFileLine: log$, header$
 		
