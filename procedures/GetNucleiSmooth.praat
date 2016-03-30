@@ -1,5 +1,3 @@
-
-
 procedure GetNucleiSmooth: .sound, .maxSmoothingDip, .minDipBefore, .minDipAfter, .silenceThreshold, .minPause, .showPeaks
 	
 	# Load objects
@@ -47,7 +45,6 @@ procedure GetNucleiSmooth: .sound, .maxSmoothingDip, .minDipBefore, .minDipAfter
 	endfor
 
 	.i = 1
-	.j = 1
 	while .i <= .numPeaks
 
 		# Set intensities, times and dips
@@ -73,25 +70,25 @@ procedure GetNucleiSmooth: .sound, .maxSmoothingDip, .minDipBefore, .minDipAfter
 		endif
 		
 		# Remove the point to be removed
-		if .remove <> 0
+		if .remove <> 0  and .remove <= .numPeaks
 			select .peaks
 			Remove point: .remove
 			.numPeaks = Get number of points
 		else
 			.i += 1
 		endif
-
-		.j += 1
 	endwhile 
 	
 	# Put all nuclei in yet another textgrid tier
+	.numNuclei = 1
 	for .i to .numPeaks	
 		
 		@SetDips: .peaks, .intensity, .i
 		
 		if dipBefore > .minDipBefore and dipAfter > .minDipAfter
 			select .textgrid
-			Insert point: 1, curTime, string$('dipBefore:1') + ","+ string$('dipAfter:1')
+			Insert point: 1, curTime, string$(.numNuclei)
+			.numNuclei += 1
 		endif
 		
 		# Show the filtered peaks in the textgrid?
