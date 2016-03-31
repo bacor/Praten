@@ -107,8 +107,8 @@ procedure GetNucleiSmooth: .sound, .maxSmoothingDip, .minDipBefore, .minDipAfter
 		Remove tier: 4
 	endif
 
-	#selectObject: .pitch, .intensity, .peaks
-	#Remove
+	selectObject: .pitch, .intensity, .peaks
+	Remove
 	select .textgrid
 endproc
 
